@@ -1,0 +1,111 @@
+package example
+
+import (
+	"fmt"
+
+    "tuissue/components/rating"
+	"tuissue/components/modal"
+	"tuissue/components/button"
+	"tuissue/components/selectbox"
+)
+
+templ PageExample() {
+    @Page("Example") {
+        <div class="min-w-[600px] max-w-0.5 mx-auto">
+            @Select()
+            @Section()
+            @Modal()
+        </div>
+    }
+}
+
+templ Select() {
+    @selectbox.SelectBox(selectbox.Props{
+        Attributes: templ.Attributes{
+            "hx-get": "/swap",
+            "hx-include": "input[name='SELECT']",
+            "hx-trigger": "change from:input[name='SELECT']",
+            "hx-target": "#the-section",
+            "hx-swap": "outerHTML",
+        },
+    }) {
+        @selectbox.Trigger(selectbox.TriggerProps{
+            Name: "SELECT",
+        }){
+            @selectbox.Value() { SELECT }
+        }
+
+        @selectbox.Content() {
+            @selectbox.Group() {
+                for i := range 5 {
+                    @selectbox.Item(selectbox.ItemProps{
+                        Value: fmt.Sprintf("%d", i),
+                    }) {
+                        { i }
+                    }
+                }
+            }
+        }
+    }
+}
+
+templ Section() {
+    <section id="the-section" class="flex flex-col gap-2">
+        for i := range 5 {
+            @Card(i)  
+        }
+    </section>
+}
+
+templ Card(value int) {
+    <div id={fmt.Sprintf("card-%d", value)} class="w-64 p-4 border rounded-md flex flex-col justify-around items-center gap-2">
+        @modal.Trigger(modal.TriggerProps{
+            ModalID: "the-modal",
+        }) {
+            @button.Button() {
+                Open Modal
+            }
+        }
+        @Rating(value)
+    </div>
+}
+
+templ Modal() {
+    @modal.Modal(modal.Props{
+        ID:    "the-modal",
+        Class: "w-fit relative",
+    }) {
+        @modal.Close(modal.CloseProps{
+            ModalID: "the-modal",
+        }) {
+            @button.Button(button.Props{
+                Variant: button.VariantDestructive,
+            }) {
+                X
+            }
+        }
+        @modal.Body(modal.BodyProps{ID: "the-modal-body"}) {
+            <div> some stuff in the modal body </div>
+        }
+    }
+}
+
+templ Rating(value int) {
+    @rating.Rating(rating.Props{
+        ID:        fmt.Sprintf("rating-%d", value),
+        Name:      "RatingValue",
+        Value:     float64(value),
+    }) {
+        @rating.Group(rating.GroupProps{
+            Class: "relative",
+        }) {
+            for i := 1; i <= 5; i++ {
+                @rating.Item(rating.ItemProps{
+                    Value: i,
+                    Style: rating.StyleStar,
+                    Class: "z-10",
+                })
+            }
+        }
+    }
+}
