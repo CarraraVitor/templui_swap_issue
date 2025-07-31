@@ -2,33 +2,49 @@ package example
 
 import (
 	"fmt"
-
-    "tuissue/components/rating"
-	"tuissue/components/modal"
-	"tuissue/components/button"
 	"tuissue/components/selectbox"
 )
 
 templ PageExample() {
     @Page("Example") {
-        <div class="min-w-[600px] max-w-0.5 mx-auto">
-            @Select()
-            @Section()
-            @Modal()
+        <div class="mt-5 min-w-[600px] max-w-1/2 mx-auto">
+            <h1 class="text-2xl"> the setup </h1> 
+            <p class="text-lg"> 
+                each item of the selectbox bellow has a div with some htmx attrs,
+                such that by clicking any of the items, the number clicked will
+                show up on the display section element.
+                the problem is that if the htmx script runs before the templUI one,
+                the initSelect function will remove all the eventListeners that htmx
+                added to the selectItems, because it clones all the content and
+                replaces it on the DOM. making htmx listen for events in nodes
+                that are not a part of the page anymore.
+            </p>
+            <br>
+            <p class="text-lg"> 
+                this will be noticed in the page as clicking an item in the selectbox
+                but not seeing the corresponding value appear in the display section
+            </p>
+            <br>
+            <p> 
+                as it is a bug that depends on which js code got to run first,
+                sometimes it shows and sometimes it doesn't.
+                a full page refresh may be needed as a way of rethrowing the dice 
+                on which, templUI or HTMX, runs first
+            </p>
+            @Main()
         </div>
     }
 }
 
+templ Main() {
+    <div id="main-component" class="border-2 p-5">
+        @Select()
+        @Section()
+    </div>
+}
+
 templ Select() {
-    @selectbox.SelectBox(selectbox.Props{
-        Attributes: templ.Attributes{
-            "hx-get": "/swap",
-            "hx-include": "input[name='SELECT']",
-            "hx-trigger": "change from:input[name='SELECT']",
-            "hx-target": "#the-section",
-            "hx-swap": "outerHTML",
-        },
-    }) {
+    @selectbox.SelectBox() {
         @selectbox.Trigger(selectbox.TriggerProps{
             Name: "SELECT",
         }){
@@ -38,11 +54,19 @@ templ Select() {
         @selectbox.Content() {
             @selectbox.Group() {
                 for i := range 5 {
-                    @selectbox.Item(selectbox.ItemProps{
-                        Value: fmt.Sprintf("%d", i),
-                    }) {
-                        { i }
-                    }
+                    <div
+                        id={fmt.Sprintf("select-items-%d", i)}
+                        hx-get={ fmt.Sprintf("/value/%d", i) }
+                        hx-trigger="click from:find div.select-item"
+                        hx-target="#the-section"
+                        hx-swap="innerHTML"
+                    >
+                        @selectbox.Item(selectbox.ItemProps{
+                            Value: fmt.Sprintf("%d", i),
+                        }) {
+                           { i }
+                        }
+                    </div>
                 }
             }
         }
@@ -50,62 +74,11 @@ templ Select() {
 }
 
 templ Section() {
-    <section id="the-section" class="flex flex-col gap-2">
-        for i := range 5 {
-            @Card(i)  
-        }
+    <h1 class="mt-1 p-2 text-2xl">
+        NUMBER DISPLAY:
+    </h1>
+    <section id="the-section" class="border roundend-md text-center text-white bg-black">
+        no value selected
     </section>
 }
 
-templ Card(value int) {
-    <div id={fmt.Sprintf("card-%d", value)} class="w-64 p-4 border rounded-md flex flex-col justify-around items-center gap-2">
-        @modal.Trigger(modal.TriggerProps{
-            ModalID: "the-modal",
-        }) {
-            @button.Button() {
-                Open Modal
-            }
-        }
-        @Rating(value)
-    </div>
-}
-
-templ Modal() {
-    @modal.Modal(modal.Props{
-        ID:    "the-modal",
-        Class: "w-fit relative",
-    }) {
-        @modal.Close(modal.CloseProps{
-            ModalID: "the-modal",
-        }) {
-            @button.Button(button.Props{
-                Variant: button.VariantDestructive,
-            }) {
-                X
-            }
-        }
-        @modal.Body(modal.BodyProps{ID: "the-modal-body"}) {
-            <div> some stuff in the modal body </div>
-        }
-    }
-}
-
-templ Rating(value int) {
-    @rating.Rating(rating.Props{
-        ID:        fmt.Sprintf("rating-%d", value),
-        Name:      "RatingValue",
-        Value:     float64(value),
-    }) {
-        @rating.Group(rating.GroupProps{
-            Class: "relative",
-        }) {
-            for i := 1; i <= 5; i++ {
-                @rating.Item(rating.ItemProps{
-                    Value: i,
-                    Style: rating.StyleStar,
-                    Class: "z-10",
-                })
-            }
-        }
-    }
-}

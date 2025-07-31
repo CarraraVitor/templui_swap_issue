@@ -13,15 +13,17 @@ func main() {
 		http.StripPrefix("/assets/", http.FileServer(http.Dir("assets/"))),
 	)
 
-	app.HandleFunc("/", handlePage)
-	app.HandleFunc("/swap", handleSwap)
+	app.HandleFunc("/", handleHome)
+	app.HandleFunc("/value/{val}", handleValue)
+
 	http.ListenAndServe("localhost:8000", app)
 }
 
-func handlePage(w http.ResponseWriter, r *http.Request) {
+func handleHome(w http.ResponseWriter, r *http.Request) {
 	example.PageExample().Render(context.Background(), w)
 }
 
-func handleSwap(w http.ResponseWriter, r *http.Request) {
-	example.Section().Render(context.Background(), w)
+func handleValue(w http.ResponseWriter, r *http.Request) {
+	val := r.PathValue("val")
+	w.Write([]byte(val))
 }

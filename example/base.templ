@@ -27,7 +27,32 @@ templ Head(title string) {
 		@popover.Script()
 		@rating.Script()
 		@selectbox.Script()
+        @Script()
 		<link rel="stylesheet" href="/assets/css/output.css"/>
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
 	</head>
+}
+
+templ Script() {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          // Re-initialize templUI components after HTMX swaps
+          document.body.addEventListener("htmx:afterSwap", (e) => {
+            if (window.templUI) {
+              Object.values(window.templUI).forEach(comp => {
+                comp.init?.(e.detail.elt);
+              });
+            }
+          });
+
+          // Re-initialize components after out-of-band swaps
+          document.body.addEventListener("htmx:oobAfterSwap", (e) => {
+            if (window.templUI) {
+              Object.values(window.templUI).forEach(comp => {
+                comp.init?.(e.detail.target);
+              });
+            }
+          });
+        })
+    </script>
 }
