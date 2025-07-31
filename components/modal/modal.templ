@@ -1,10 +1,7 @@
-// templui component modal - version: main installed by templui v0.73.2
+// templui component modal - version: v0.85.0 installed by templui v0.85.0
 package modal
 
-import (
-	"tuissue/utils"
-	"strconv"
-)
+import "tuissue/utils"
 
 type Props struct {
 	ID               string
@@ -12,6 +9,7 @@ type Props struct {
 	Attributes       templ.Attributes
 	DisableClickAway bool
 	DisableESC       bool
+	InitialOpen      bool
 }
 
 type TriggerProps struct {
@@ -19,14 +17,14 @@ type TriggerProps struct {
 	Class      string
 	Attributes templ.Attributes
 	Disabled   bool
-	ModalID    string // ID of the modal to trigger
+	For        string // ID of the modal to trigger
 }
 
 type CloseProps struct {
 	ID         string
 	Class      string
 	Attributes templ.Attributes
-	ModalID    string // ID of the modal to close (optional, defaults to closest modal)
+	For        string // ID of the modal to close (optional, defaults to closest modal)
 }
 
 type HeaderProps struct {
@@ -57,19 +55,27 @@ templ Modal(props ...Props) {
 	}
 	<div
 		id={ p.ID }
-		data-modal
-		data-disable-click-away={ strconv.FormatBool(p.DisableClickAway) }
-		data-disable-esc={ strconv.FormatBool(p.DisableESC) }
-		class="modal-container fixed inset-0 z-50 flex items-center justify-center overflow-y-auto opacity-0 transition-opacity duration-300 ease-out hidden"
+		data-tui-modal
+		data-tui-modal-open="false"
+		class="modal-container fixed inset-0 z-50 items-center justify-center overflow-y-auto opacity-0 transition-opacity duration-300 ease-out hidden"
 		aria-labelledby={ p.ID + "-title" }
 		role="dialog"
 		aria-modal="true"
+		if p.DisableClickAway {
+			data-tui-modal-disable-click-away="true"
+		}
+		if p.DisableESC {
+			data-tui-modal-disable-esc="true"
+		}
+		if p.InitialOpen {
+			data-tui-modal-initial-open="true"
+		}
 		{ p.Attributes... }
 	>
-		<div data-modal-backdrop class="fixed inset-0 bg-background/70 bg-opacity-50" aria-hidden="true"></div>
+		<div data-tui-modal-backdrop class="fixed inset-0 bg-background/70 bg-opacity-50" aria-hidden="true"></div>
 		<div
 			id={ p.ID + "-content" }
-			data-modal-content
+			data-tui-modal-content
 			class={
 				utils.TwMerge(
 					"modal-content relative bg-background rounded-lg border text-left overflow-hidden shadow-xl transform transition-all sm:my-8 w-full scale-95 opacity-0", // Base classes + transition start
@@ -92,12 +98,13 @@ templ Trigger(props ...TriggerProps) {
 		if p.ID != "" {
 			id={ p.ID }
 		}
-		data-modal-trigger
-		if p.ModalID != "" {
-			data-modal-target-id={ p.ModalID }
+		if p.For != "" {
+			data-tui-modal-trigger={ p.For }
 		}
+		data-tui-modal-trigger-open="false"
 		class={
 			utils.TwMerge(
+				"group",
 				utils.IfElse(p.Disabled, "cursor-not-allowed opacity-50", "cursor-pointer"),
 				p.Class,
 			),
@@ -117,9 +124,10 @@ templ Close(props ...CloseProps) {
 		if p.ID != "" {
 			id={ p.ID }
 		}
-		data-modal-close
-		if p.ModalID != "" {
-			data-modal-target-id={ p.ModalID }
+		if p.For != "" {
+			data-tui-modal-close={ p.For }
+		} else {
+			data-tui-modal-close
 		}
 		class={ utils.TwMerge("cursor-pointer", p.Class) }
 		{ p.Attributes... }
